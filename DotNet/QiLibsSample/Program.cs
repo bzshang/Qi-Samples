@@ -17,10 +17,10 @@ namespace QiLibsSample
     {
         // VERY IMPORTANT: edit the following values to reflect the authorization items you were given
 
-        static string _resource = "PLACEHOLDER_REPLACE_WITH_RESOURCE";
-        static string _authority = "PLACEHOLDER_REPLACE_WITH_AUTHORITY";
-        static string _appId = "PLACEHOLDER_REPLACE_WITH_USER_ID";
-        static string _appKey = "PLACEHOLDER_REPLACE_WITH_USER_SECRET";
+        static string _resource = "https://qihomeprod.onmicrosoft.com/historian";
+        static string _authority = "https://login.windows.net/b36cfd3b-8749-4898-9d6d-db0e18747472/oauth2/token";
+        static string _appId = "64f52acc-4a02-40ad-a059-7dcd1d38be68";
+        static string _appKey = "GjqVItbTHEgW1f8u3zaPUAqP8wDjDHrZpMUq8Mb8ZNo=";
 
 
         // Azure AD authentication related
@@ -54,14 +54,16 @@ namespace QiLibsSample
                 Console.WriteLine("Creating a Qi type for WaveData instances");
                 QiTypeBuilder typeBuilder = new QiTypeBuilder();
                 evtType = typeBuilder.Create<WaveData>();
-                evtType.Id = "WaveType";
+                evtType.Id = "WaveType_bshang";
+                //qiclient.DeleteType("WaveType_bshang");
+                //QiType tp = qiclient.GetType("WaveType_bshang");
                 QiType tp = qiclient.GetOrCreateType(evtType);
 
                 Console.WriteLine("Creating a stream in this tenant for simple event measurements");
 
                 QiStream sampleStream = new QiStream();
-                sampleStream.Name = "evtStream";
-                sampleStream.Id = "evtStream";
+                sampleStream.Name = "bshangStream";
+                sampleStream.Id = "bshangStream";
 
                 // set the TypeId property to the value of the Id property of the type you submitted
                 // All events submitted to this stream must be of this type
@@ -80,7 +82,7 @@ namespace QiLibsSample
                 TimeSpan span = new TimeSpan(0, 1, 0);
                 WaveData evt = WaveData.Next(span, 2.0, 0);
 
-                qiclient.InsertValue("evtStream", evt);
+                qiclient.InsertValue("bshangStream", evt);
 
                 List<WaveData> events = new List<WaveData>();
                 // how to insert an a collection of events
@@ -91,7 +93,7 @@ namespace QiLibsSample
                     Thread.Sleep(400);
                 }
 
-                qiclient.InsertValues<WaveData>("evtStream", events);
+                qiclient.InsertValues<WaveData>("bshangStream", events);
                 Thread.Sleep(2000);
 
                 #endregion
@@ -102,7 +104,7 @@ namespace QiLibsSample
                 // use the round trip formatting for time
                 Console.WriteLine("Retrieving the inserted events");
                 Console.WriteLine("==============================");
-                IEnumerable<WaveData> foundEvts = qiclient.GetWindowValues<WaveData>("evtStream", "0", "198");
+                IEnumerable<WaveData> foundEvts = qiclient.GetWindowValues<WaveData>("bshangStream", "0", "198");
                 DumpEvents(foundEvts);
                 #endregion
 
@@ -115,7 +117,7 @@ namespace QiLibsSample
                 evt = foundEvts.First<WaveData>();
                 evt = WaveData.Next(span, 4.0, evt.Order);
 
-                qiclient.UpdateValue<WaveData>("evtStream", evt);
+                qiclient.UpdateValue<WaveData>("bshangStream", evt);
 
                 // update the collection of events (same span, multiplier of 4, retain order)
                 List<WaveData> newEvents = new List<WaveData>();
@@ -126,12 +128,12 @@ namespace QiLibsSample
                     Thread.Sleep(500);
                 }
 
-                qiclient.UpdateValues<WaveData>("evtStream", newEvents);
+                qiclient.UpdateValues<WaveData>("bshangStream", newEvents);
                 Thread.Sleep(2000);
 
                 Console.WriteLine("Retrieving the updated values");
                 Console.WriteLine("=============================");
-                foundEvts = qiclient.GetWindowValues<WaveData>("evtStream", "0", "198");
+                foundEvts = qiclient.GetWindowValues<WaveData>("bshangStream", "0", "198");
                 DumpEvents(foundEvts);
 
                 // illustrate how stream behaviors modify retrieval
@@ -139,23 +141,23 @@ namespace QiLibsSample
                 // The default behavior is continuous, so ExactOrCalculated should bring back interpolated values
                 Console.WriteLine();
                 Console.WriteLine(@"Retrieving three events without a stream behavior");
-                foundEvts = qiclient.GetRangeValues<WaveData>("evtStream", "1", 0, 3, false, QiBoundaryType.ExactOrCalculated);
+                foundEvts = qiclient.GetRangeValues<WaveData>("bshangStream", "1", 0, 3, false, QiBoundaryType.ExactOrCalculated);
                 DumpEvents(foundEvts);
 
                 // now, create a stream behavior with Discrete and attach it to the existing stream
                 QiStreamBehavior behavior = new QiStreamBehavior();
-                behavior.Id = "evtStreamStepLeading";
+                behavior.Id = "bshangStreamStepLeading";
                 behavior.Mode = QiStreamMode.StepwiseContinuousLeading;
                 behavior = qiclient.GetOrCreateBehavior(behavior);
 
                 // update the stream to include this behavior
                 sampleStream.BehaviorId = behavior.Id;
-                qiclient.UpdateStream("evtStream", sampleStream);
+                qiclient.UpdateStream("bshangStream", sampleStream);
 
                 // repeat the retrieval
                 Console.WriteLine();
                 Console.WriteLine("Retrieving three events with a stepwise stream behavior in effect -- compare to last retrieval");
-                foundEvts = qiclient.GetRangeValues<WaveData>("evtStream", "1", 0, 3, false, QiBoundaryType.ExactOrCalculated);
+                foundEvts = qiclient.GetRangeValues<WaveData>("bshangStream", "1", 0, 3, false, QiBoundaryType.ExactOrCalculated);
                 DumpEvents(foundEvts);
 
                 #endregion
@@ -164,12 +166,12 @@ namespace QiLibsSample
 
                 Console.WriteLine();
                 Console.WriteLine("Deleting events");
-                qiclient.RemoveValue<int>("evtStream", 0);
-                qiclient.RemoveWindowValues<int>("evtStream", 2, 198);
+                qiclient.RemoveValue<int>("bshangStream", 0);
+                qiclient.RemoveWindowValues<int>("bshangStream", 2, 198);
                 Thread.Sleep(2000);
                 Console.WriteLine("Checking for events");
                 Console.WriteLine("===================");
-                foundEvts = qiclient.GetWindowValues<WaveData>("evtStream", "0", "198");
+                foundEvts = qiclient.GetWindowValues<WaveData>("bshangStream", "0", "198");
                 DumpEvents(foundEvts);
                 #endregion
                 #endregion
@@ -190,8 +192,8 @@ namespace QiLibsSample
                 try
                 {
 
-                    qiclient.DeleteStream("evtStream");
-                    qiclient.DeleteBehavior("evtStreamStepLeading");
+                    qiclient.DeleteStream("bshangStream");
+                    qiclient.DeleteBehavior("bshangStreamStepLeading");
                     qiclient.DeleteType(evtType.Id);
                 }
                 catch (Exception)
